@@ -3,6 +3,9 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\SearchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,4 +34,41 @@ Route::group(['prefix' => 'auth'], function () {
 // Route pour la vérification d'email
 Route::get('verify-email/{id}/{token}', [AuthController::class, 'verifyEmail']);
 
-// Ici, nous ajouterons les routes pour les produits et catégories
+// Routes pour les produits et catégories (protégées par auth)
+Route::middleware(['auth:api'])->group(function () {
+    // Routes pour les produits - modifications nécessitent un rôle admin
+    Route::get('products', [ProductController::class, 'index']);
+    Route::get('products/{product}', [ProductController::class, 'show']);
+
+    Route::middleware(['role:admin'])->group(function () {
+        Route::post('products', [ProductController::class, 'store']);
+        Route::put('products/{product}', [ProductController::class, 'update']);
+        Route::patch('products/{product}', [ProductController::class, 'update']);
+        Route::delete('products/{product}', [ProductController::class, 'destroy']);
+    });
+
+    // Routes pour les catégories - modifications nécessitent un rôle admin
+    Route::get('categories', [CategoryController::class, 'index']);
+    Route::get('categories/{category}', [CategoryController::class, 'show']);
+    Route::get('categories/{category}/products', [CategoryController::class, 'products']);
+
+    Route::middleware(['role:admin'])->group(function () {
+        Route::post('categories', [CategoryController::class, 'store']);
+        Route::put('categories/{category}', [CategoryController::class, 'update']);
+        Route::patch('categories/{category}', [CategoryController::class, 'update']);
+        Route::delete('categories/{category}', [CategoryController::class, 'destroy']);
+    });
+
+    // Route de recherche
+    Route::get('search', [SearchController::class, 'searchProducts']);
+});
+
+// Routes publiques pour lister les produits et les catégories
+Route::prefix('public')->group(function () {
+    Route::get('products', [ProductController::class, 'index']);
+    Route::get('products/{product}', [ProductController::class, 'show']);
+    Route::get('categories', [CategoryController::class, 'index']);
+    Route::get('categories/{category}', [CategoryController::class, 'show']);
+    Route::get('categories/{category}/products', [CategoryController::class, 'products']);
+    Route::get('search', [SearchController::class, 'searchProducts']);
+});
